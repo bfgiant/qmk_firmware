@@ -31,6 +31,7 @@ enum custom_keycodes {
   LOWER,
   RAISE,
   ADJUST,
+  BSPCDEL,
   RGBRST
 };
 
@@ -41,6 +42,7 @@ enum custom_keycodes {
 #define KC_ADJUST ADJUST
 #define KC_LT1   LT(_RAISE, KC_DEL)
 #define KC_LT2   LT(_ADJUST, KC_ENT)
+#define KC_BSDEL BSPCDEL
 #define KC_RST   RESET
 #define KC_LRST  RGBRST
 #define KC_LTOG  RGB_TOG
@@ -60,7 +62,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   //,-----------------------------------------.                ,-----------------------------------------.
       XXXXX,     Q,     W,     E,     R,     T,                      Y,     U,     I,     O,     P, XXXXX,\
   //|------+------+------+------+------+------|                |------+------+------+------+------+------|
-      XXXXX,     A,     S,     D,     F,     G,                      H,     J,     K,     L,  BSPC, XXXXX,\
+      XXXXX,     A,     S,     D,     F,     G,                      H,     J,     K,     L, BSDEL, XXXXX,\
   //|------+------+------+------+------+------|                |------+------+------+------+------+------|
       XXXXX,     Z,     X,     C,     V,     B,                      N,     M,  COMM,   DOT,  SLSH, XXXXX,\
   //|------+------+------+------+------+------+------|  |------+------+------+------+------+------+------|
@@ -164,6 +166,7 @@ void iota_gfx_task_user(void) {
 #endif//SSD1306OLED
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
+  static bool bsdel_mods = false;
   switch (keycode) {
     case QWERTY:
       if (record->event.pressed) {
@@ -192,13 +195,13 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
       return false;
       break;
     case ADJUST:
-        if (record->event.pressed) {
-          layer_on(_ADJUST);
-        } else {
-          layer_off(_ADJUST);
-        }
-        return false;
-        break;
+      if (record->event.pressed) {
+        layer_on(_ADJUST);
+      } else {
+        layer_off(_ADJUST);
+      }
+      return false;
+      break;
     case RGB_MOD:
       #ifdef RGBLIGHT_ENABLE
         if (record->event.pressed) {
@@ -217,6 +220,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
           RGB_current_mode = rgblight_config.mode;
         }
       #endif
+      break;
+    case BSPCDEL:
+      if (record->event.pressed) {
+        if (get_mods() & MOD_BIT(KC_LSFT)) {
+          unregister_code(KC_LSFT);
+          register_code(KC_DEL);
+          bsdel_mods = true;
+        } else {
+          register_code(KC_BSPC);
+        }
+      } else {
+        if (bsdel_mods) {
+          unregister_code(KC_DEL);
+          register_code(KC_LSFT);
+          bsdel_mods = false;
+        } else {
+          unregister_code(KC_BSPC);
+        }
+      }
+      return false;
       break;
   }
   return true;
